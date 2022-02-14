@@ -61,23 +61,27 @@ func (s *dobby) registerWorkers(workers ...interface{}) error {
 			if _, ok := s.hdls[channelName]; ok {
 				return fmt.Errorf("channel:%s is aready registed to %s, can't reqister it again", channelName, funcName)
 			}
-			log.Println(channelName, "registerd")
-			s.hdls[channelName] = func(message *nsq.Message) error {
-				// msg := new(NsqMessage)
-				// err := json.Unmarshal(message.Body, msg)
-				// if err != nil { //drop illegal msgs
-				// 	dLog.Printf("NSQ message is not legal:" + err.Error())
-				// 	return nil
-				// }
-				ret := fm.Func.Call([]reflect.Value{reflect.ValueOf(worker), reflect.ValueOf(message)})
-				if ret[0].Interface() != nil {
-					return ret[0].Interface().(error)
-				}
-				return nil
-			}
+			dLog.Println(channelName, "registerd")
+			s.hdls[channelName] = s.makeHandler(fm, worker)
 		}
 	}
 	return nil
+}
+
+func (s *dobby) makeHandler(fm reflect.Method, worker interface{}) func(message *nsq.Message) error {
+	return func(message *nsq.Message) error {
+		// msg := new(NsqMessage)
+		// err := json.Unmarshal(message.Body, msg)
+		// if err != nil { //drop illegal msgs
+		// 	dLog.Printf("NSQ message is not legal:" + err.Error())
+		// 	return nil
+		// }
+		ret := fm.Func.Call([]reflect.Value{reflect.ValueOf(worker), reflect.ValueOf(message)})
+		if ret[0].Interface() != nil {
+			return ret[0].Interface().(error)
+		}
+		return nil
+	}
 }
 
 func NewWorker(workers ...interface{}) (ret *dobby, err error) {
