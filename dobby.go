@@ -70,7 +70,10 @@ func (s *dobby) registerWorkers(workers ...interface{}) error {
 				// 	return nil
 				// }
 				ret := fm.Func.Call([]reflect.Value{reflect.ValueOf(worker), reflect.ValueOf(message)})
-				return ret[0].Interface().(error)
+				if ret[0].Interface() != nil {
+					return ret[0].Interface().(error)
+				}
+				return nil
 			}
 		}
 	}
